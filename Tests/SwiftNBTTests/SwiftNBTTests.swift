@@ -62,3 +62,47 @@ func testValueDescriptions() {
     #expect(NBTValue.list([.int(1), .int(2)]).description == "List[2]")
     #expect(NBTValue.compound(["Enabled": .byte(1)]).description == "Compound{1}")
 }
+
+@Test("exposes typed accessors for each tag type")
+func testTypedAccessors() {
+    #expect(NBTValue.byte(-1).byteValue == -1)
+    #expect(NBTValue.byte(-1).intValue == nil)
+    #expect(NBTValue.short(32000).shortValue == 32000)
+    #expect(NBTValue.int(42).intValue == 42)
+    #expect(NBTValue.long(9).longValue == 9)
+    #expect(NBTValue.float(1.5).floatValue == 1.5)
+    #expect(NBTValue.double(2.5).doubleValue == 2.5)
+    #expect(NBTValue.string("a").stringValue == "a")
+    #expect(NBTValue.byteArray([1, 2]).byteArrayValue == [1, 2])
+    #expect(NBTValue.intArray([1, 2]).intArrayValue == [1, 2])
+    #expect(NBTValue.longArray([1, 2]).longArrayValue == [1, 2])
+    #expect(NBTValue.list([.int(1)]).listValue == [.int(1)])
+    #expect(NBTValue.compound(["k": .int(1)]).compoundValue?["k"] == .int(1))
+}
+
+@Test("unifies numeric and boolean access across integer widths")
+func testUnifiedNumericAccessors() {
+    #expect(NBTValue.int(42).int64Value == 42)
+    #expect(NBTValue.byte(1).int64Value == 1)
+    #expect(NBTValue.short(2).int64Value == 2)
+    #expect(NBTValue.long(3).int64Value == 3)
+    #expect(NBTValue.string("x").int64Value == nil)
+    #expect(NBTValue.float(2.5).int64Value == nil)
+
+    #expect(NBTValue.byte(1).boolValue == true)
+    #expect(NBTValue.byte(0).boolValue == false)
+    #expect(NBTValue.long(-1).boolValue == true)
+    #expect(NBTValue.string("x").boolValue == nil)
+}
+
+@Test("values are hashable and equatable")
+func testHashable() {
+    let values: Set<NBTValue> = [
+        .int(1), .int(1),
+        .string("a"),
+        .compound(["k": .int(1)]),
+        .compound(["k": .int(1)]),
+        .list([.byte(1)]),
+    ]
+    #expect(values.count == 4)
+}
