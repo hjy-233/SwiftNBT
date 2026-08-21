@@ -13,7 +13,6 @@ public indirect enum NBTValue: Hashable, Sendable {
     case intArray([Int32])
     case longArray([Int64])
 
-    // MARK: - Typed accessors
 
     public var byteValue: Int8? {
         guard case let .byte(value) = self else { return nil }
