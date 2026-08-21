@@ -1,5 +1,5 @@
 /// Values supported by Minecraft's Named Binary Tag format.
-public indirect enum NBTValue: Hashable, Sendable {
+public enum NBTValue: Hashable, Sendable {
     case byte(Int8)
     case short(Int16)
     case int(Int32)
@@ -8,11 +8,10 @@ public indirect enum NBTValue: Hashable, Sendable {
     case double(Double)
     case byteArray([Int8])
     case string(String)
-    case list([NBTValue])
-    case compound([String: NBTValue])
+    indirect case list([NBTValue])
+    indirect case compound([String: NBTValue])
     case intArray([Int32])
     case longArray([Int64])
-
 
     public var byteValue: Int8? {
         guard case let .byte(value) = self else { return nil }

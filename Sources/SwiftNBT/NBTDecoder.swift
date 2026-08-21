@@ -6,17 +6,19 @@ public struct NBTDecoder: Sendable {
 
     public func decode(_ data: Data, compression: NBTCompression = .automatic) throws -> NBTDocument {
         let rawData = try NBTCompressionCodec.decode(data, compression: compression)
-        var reader = NBTReader(data: rawData)
-
         guard !rawData.isEmpty else { throw NBTError.emptyData }
-        let rootType = try reader.readByte()
-        guard rootType == NBTType.compound.rawValue else {
-            throw NBTError.invalidRootType(rootType)
-        }
 
-        let rootName = try reader.readString()
-        let root = try reader.readCompound()
-        return NBTDocument(rootName: rootName, root: root)
+        return try rawData.withUnsafeBytes { buffer in
+            var reader = NBTReader(buffer: buffer)
+            let rootType = try reader.readByte()
+            guard rootType == NBTType.compound.rawValue else {
+                throw NBTError.invalidRootType(rootType)
+            }
+
+            let rootName = try reader.readString()
+            let root = try reader.readCompound()
+            return NBTDocument(rootName: rootName, root: root)
+        }
     }
 }
 
@@ -37,13 +39,13 @@ private enum NBTType: UInt8 {
 }
 
 private struct NBTReader {
-    let data: Data
+    let buffer: UnsafeRawBufferPointer
     var offset = 0
 
     mutating func readByte() throws -> UInt8 {
-        guard offset < data.count else { throw NBTError.insufficientData }
+        guard offset < buffer.count else { throw NBTError.insufficientData }
         defer { offset += 1 }
-        return data[offset]
+        return buffer[offset]
     }
 
     mutating func readInt8() throws -> Int8 {
@@ -55,9 +57,10 @@ private struct NBTReader {
     }
 
     mutating func readUInt16() throws -> UInt16 {
-        let high = try UInt16(readByte())
-        let low = try UInt16(readByte())
-        return high << 8 | low
+        guard offset + 2 <= buffer.count else { throw NBTError.insufficientData }
+        let value = UInt16(buffer[offset]) << 8 | UInt16(buffer[offset + 1])
+        offset += 2
+        return value
     }
 
     mutating func readInt32() throws -> Int32 {
@@ -66,9 +69,11 @@ private struct NBTReader {
     }
 
     mutating func readUInt32() throws -> UInt32 {
+        guard offset + 4 <= buffer.count else { throw NBTError.insufficientData }
         var value: UInt32 = 0
         for _ in 0 ..< 4 {
-            value = try value << 8 | UInt32(readByte())
+            value = value << 8 | UInt32(buffer[offset])
+            offset += 1
         }
         return value
     }
@@ -79,9 +84,11 @@ private struct NBTReader {
     }
 
     mutating func readUInt64() throws -> UInt64 {
+        guard offset + 8 <= buffer.count else { throw NBTError.insufficientData }
         var value: UInt64 = 0
         for _ in 0 ..< 8 {
-            value = try value << 8 | UInt64(readByte())
+            value = value << 8 | UInt64(buffer[offset])
+            offset += 1
         }
         return value
     }
@@ -96,8 +103,8 @@ private struct NBTReader {
 
     mutating func readString() throws -> String {
         let length = try Int(readUInt16())
-        guard offset + length <= data.count else { throw NBTError.insufficientData }
-        guard let value = String(data: data[offset ..< offset + length], encoding: .utf8) else {
+        guard offset + length <= buffer.count else { throw NBTError.insufficientData }
+        guard let value = String(bytes: buffer[offset ..< offset + length], encoding: .utf8) else {
             throw NBTError.invalidString
         }
         offset += length
@@ -105,7 +112,7 @@ private struct NBTReader {
     }
 
     mutating func readCompound() throws -> NBTCompound {
-        var result = NBTCompound()
+        var result = NBTCompound(minimumCapacity: 16)
         while true {
             let rawType = try readByte()
             guard let type = NBTType(rawValue: rawType) else {
@@ -171,11 +178,9 @@ private struct NBTReader {
 
     mutating func readByteArray() throws -> [Int8] {
         let count = try readArrayCount()
-        var values = [Int8]()
-        values.reserveCapacity(count)
-        for _ in 0 ..< count {
-            try values.append(readInt8())
-        }
+        guard offset + count <= buffer.count else { throw NBTError.insufficientData }
+        let values = Array(buffer[offset ..< offset + count].bindMemory(to: Int8.self))
+        offset += count
         return values
     }
 
