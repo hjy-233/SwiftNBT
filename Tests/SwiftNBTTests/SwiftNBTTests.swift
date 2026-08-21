@@ -46,3 +46,19 @@ func testRejectsInvalidRoot() {
         try NBTDecoder().decode(Data([8, 0, 0]), compression: .none)
     }
 }
+
+@Test("describes NBT values")
+func testValueDescriptions() {
+    #expect(NBTValue.byte(-1).description == "-1b")
+    #expect(NBTValue.short(32000).description == "32000s")
+    #expect(NBTValue.int(42).description == "42")
+    #expect(NBTValue.long(42).description == "42L")
+    #expect(NBTValue.float(1.5).description == "1.5f")
+    #expect(NBTValue.double(2.5).description == "2.5d")
+    #expect(NBTValue.string("SwiftNBT").description == "SwiftNBT")
+    #expect(NBTValue.byteArray([-1, 0, 1]).description == "ByteArray[3]")
+    #expect(NBTValue.intArray([1, 2, 3]).description == "IntArray[3]")
+    #expect(NBTValue.longArray([4, 5, 6]).description == "LongArray[3]")
+    #expect(NBTValue.list([.int(1), .int(2)]).description == "List[2]")
+    #expect(NBTValue.compound(["Enabled": .byte(1)]).description == "Compound{1}")
+}
