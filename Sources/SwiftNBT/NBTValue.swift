@@ -74,8 +74,6 @@ public indirect enum NBTValue: Hashable, Sendable {
         return value
     }
 
-    // MARK: - Unified numeric access
-
     /// The value coerced to `Int64` for any integer tag type.
     public var int64Value: Int64? {
         switch self {
