@@ -1,0 +1,7 @@
+excluded:
+  - .build
+
+disabled_rules:
+  - cyclomatic_complexity
+  - line_length
+  - trailing_comma
